@@ -1,0 +1,72 @@
+#include <chrono>     // Include the chrono library for timing
+#include <cstdlib>    // Include the cstdlib library for rand() and srand()
+#include <iostream>   // Include the iostream library for input/output
+#include <thread>     // Include the std::thread library for parallel execution
+#include <vector>     // Include the vector library for dynamic arrays
+#include <time.h>     // Include the time.h library for time()
+
+using namespace std::chrono;  // Use the std::chrono namespace for time-related functions
+using namespace std;          // Use the standard namespace for standard library functions
+
+// Function to generate random integers and fill an array
+void generateRandomArray(int arr[], int size) {
+  for (int i = 0; i < size; i++) {
+    arr[i] = rand() % 100;  // Assign a random number between 0 and 99 to each element
+  }
+}
+
+// Function to add corresponding elements of two arrays in parallel
+void parallelArrayAddition(int arr1[], int arr2[], int result[], int start, int end) {
+  for (int i = start; i < end; i++) {
+    result[i] = arr1[i] + arr2[i]; // Add corresponding elements of arr1 and arr2 and store in result
+  }
+}
+
+int main() {
+  unsigned long arraySize = 100000000;  // Size of the arrays
+  srand(time(0));  // Seed the random number generator with the current time
+  
+  // Declare pointers for three arrays
+  int *array1, *array2, *resultArray;
+
+  // Dynamically allocate memory for the arrays
+  array1 = (int *)malloc(arraySize * sizeof(int));
+  array2 = (int *)malloc(arraySize * sizeof(int));
+  resultArray = (int *)malloc(arraySize * sizeof(int));
+
+  // Generate random numbers and fill the arrays
+  generateRandomArray(array1, arraySize);
+  generateRandomArray(array2, arraySize);
+
+  auto startTime = high_resolution_clock::now();  // Record the starting time
+  
+  // Define the number of threads to use (assuming 4 threads here)
+  int numThreads = 4;
+  int chunkSize = arraySize / numThreads;
+
+  // Create a vector to hold thread objects
+  vector<thread> threads;
+
+  // Create and start threads for parallel addition
+  for (int i = 0; i < numThreads; i++) {
+    threads.push_back(thread(parallelArrayAddition, array1, array2, resultArray, i * chunkSize, (i + 1) * chunkSize));
+  }
+
+  // Wait for all threads to finish
+  for (int i = 0; i < numThreads; i++) {
+    threads[i].join();
+  }
+  
+  auto stopTime = high_resolution_clock::now();  // Record the stopping time
+  auto duration = duration_cast<microseconds>(stopTime - startTime);  // Calculate the elapsed time
+  
+  // Output the elapsed time
+  cout << "Time taken by the function: " << duration.count() << " microseconds" << endl;
+  
+  // Free dynamically allocated memory
+  free(array1);
+  free(array2);
+  free(resultArray);
+  
+  return 0;
+}
